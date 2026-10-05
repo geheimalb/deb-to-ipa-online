@@ -16,15 +16,23 @@ jobs:
         run: |
           curl -L -o ${{ github.workspace }}/app.deb "${{ github.event.inputs.deb }}"
           dpkg-deb -X ${{ github.workspace }}/app.deb ${{ github.workspace }}/app
-
           mkdir -p ${{ github.workspace }}/ipa/Payload
-          cp -R ${{ github.workspace }}/app/Applications/* ${{ github.workspace }}/ipa/Payload
+          
+          # Findet den .app-Ordner automatisch, egal wo er liegt
+          APP_PATH=$(find ${{ github.workspace }}/app -type d -name "*.app" | head -n 1)
+          
+          if [ -z "$APP_PATH" ]; then
+            echo "Fehler: Keine .app-Datei in der .deb gefunden!"
+            exit 1
+          fi
+          
+          cp -R "$APP_PATH" ${{ github.workspace }}/ipa/Payload
           
           cd ${{ github.workspace }}/ipa
           zip -r ${{ github.workspace }}/App.ipa .
-
       - name: Upload IPA
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: App
           path: ${{ github.workspace }}/App.ipa
+
